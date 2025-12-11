@@ -13,6 +13,8 @@ func main() {
 
 	server := app.NewServer(cfg)
 
+	defer server.Container.DB.Close()
+
 	if err := server.Run(); err != nil {
 		log.Fatalf("server error: %v", err)
 	}

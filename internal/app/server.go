@@ -11,7 +11,7 @@ import (
 type Server struct {
 	addr      string
 	router    http.Handler
-	container *Container
+	Container *Container
 }
 
 func NewServer(cfg *config.Config) *Server {
@@ -23,7 +23,7 @@ func NewServer(cfg *config.Config) *Server {
 	return &Server{
 		addr:      cfg.HTTPAddr,
 		router:    mux,
-		container: container,
+		Container: container,
 	}
 }
 
