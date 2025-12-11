@@ -5,6 +5,8 @@ import (
 	"context"
 	"log"
 
+	"steam-observer/internal/modules/auth/adapters/in/google"
+	authpg "steam-observer/internal/modules/auth/adapters/out/postgres"
 	authapp "steam-observer/internal/modules/auth/app"
 	"steam-observer/internal/shared/config"
 	"steam-observer/internal/shared/db"
@@ -24,7 +26,11 @@ func NewContainer(cfg *config.Config) *Container {
 		log.Fatalf("failed to connect to postgres: %v", err)
 	}
 
-	authService := authapp.NewAuthService(cfg.Google /* позже сюда добавим repo, tokenProvider, etc. */)
+	userRepo := authpg.NewUserRepository(pg.Pool)
+	oauthClient := google.NewStubClient()       // твой адаптер
+	tokenProvider := token.NewProvider(cfg.JWT) // твой адаптер
+
+	authService := authapp.NewAuthService(cfg.Google, userRepo, oauthClient, tokenProvider)
 
 	return &Container{
 		Config:      cfg,

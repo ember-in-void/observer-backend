@@ -32,11 +32,20 @@ func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	if code == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte("missing code"))
+		_, _ = w.Write([]byte(`{"error":"missing code"}`))
 		return
 	}
 
-	// Пока просто показываем заглушку, чтобы видеть, что всё работает
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("Google callback OK, code received"))
+	token, err := h.authService.CompleteGoogleLogin(r.Context(), code)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"cannot complete google login"}`))
+		return
+	}
+
+	// Вариант 1: отдать JSON
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"access_token":"` + token + `"}`))
+
+	// Вариант 2 (позже): положить в httpOnly cookie и сделать redirect на фронт
 }

@@ -1,3 +1,13 @@
 package domain
 
-// TODO: User entity
+import "time"
+
+type UserID string
+
+type User struct {
+	ID        UserID
+	Email     *string
+	GoogleID  *string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
