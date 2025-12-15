@@ -2,7 +2,9 @@
 package config
 
 import (
+	"fmt"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -13,14 +15,19 @@ type GoogleOAuthConfig struct {
 	RedirectURL  string
 }
 
+type JWTConfig struct {
+	Secret string
+	TTL    time.Duration
+}
+
 type Config struct {
 	HTTPAddr string
 	Google   GoogleOAuthConfig
 	Database string
+	JWT      JWTConfig
 }
 
 func Load() *Config {
-	// Загружаем .env файл (игнорируем ошибку если файла нет)
 	_ = godotenv.Load()
 
 	return &Config{
@@ -31,6 +38,10 @@ func Load() *Config {
 			RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 		},
 		Database: os.Getenv("DATABASE_URL"),
+		JWT: JWTConfig{
+			Secret: os.Getenv("JWT_SECRET"),
+			TTL:    time.Duration(getEnvAsInt("JWT_TTL_SECONDS", 3600)) * time.Second,
+		},
 	}
 }
 
@@ -39,4 +50,15 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvAsInt(name string, defaultVal int) int {
+	if valueStr := os.Getenv(name); valueStr != "" {
+		var value int
+		_, err := fmt.Sscanf(valueStr, "%d", &value)
+		if err == nil {
+			return value
+		}
+	}
+	return defaultVal
 }
