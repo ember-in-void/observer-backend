@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	authhttp "steam-observer/internal/modules/auth/adapters/in/http"
-	"steam-observer/internal/shared/http/middleware"
 )
 
 func RegisterRoutes(mux *http.ServeMux, c *Container) {
@@ -16,7 +15,9 @@ func RegisterRoutes(mux *http.ServeMux, c *Container) {
 	mux.HandleFunc("/auth/google/login", authHandler.GoogleLogin)
 	mux.HandleFunc("/auth/google/callback", authHandler.GoogleCallback)
 
-	authMW := middleware.Auth()
+	// authMW := middleware.Auth(c.TokenProvider)
+	// Protected routes
+	// mux.Handle("/market/tracked", authMW(http.HandlerFunc(marketHandler.ListTracked)))
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {
