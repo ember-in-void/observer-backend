@@ -104,7 +104,7 @@ func scanUser(row pgx.Row) (*domain.User, error) {
 
 	if err := row.Scan(&id, &email, &googleID, &createdAt, &updatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
+			return nil, out_ports.ErrNotFound
 		}
 		return nil, err
 	}

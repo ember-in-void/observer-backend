@@ -4,6 +4,7 @@ package app
 import (
 	"context"
 	"errors"
+	"log"
 	"net/url"
 
 	"steam-observer/internal/modules/auth/domain"
@@ -59,31 +60,30 @@ func (s *authServiceImpl) BeginGoogleLogin(ctx context.Context, redirectAfterLog
 }
 
 func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code string) (string, error) {
-	// 1. Обмен code -> tokens у Google
+	// 1. Обменять code на токены (пока stub)
+	log.Println("auth: got code", code)
+
 	tokens, err := s.oauthClient.ExchangeCode(ctx, code)
 	if err != nil {
+		log.Println("auth: oauth error:", err)
+
 		return "", err
 	}
 
-	// 2. Распарсить и провалидировать id_token (подпись, iss, aud, exp)
-	// тут можно сделать внутри oauthClient или отдельным helper'ом
-	claims, err := ParseAndValidateIDToken(tokens.IDToken, s.cfg.ClientID)
-	if err != nil {
-		return "", err
-	}
+	// TODO: реальный GoogleOAuthClient, возьмём googleID/email из tokens.IDToken
+	googleID := "stub-google-id"
+	emailStr := "stub@example.com"
+	email := &emailStr
 
-	googleID := claims.Sub
-	email := claims.Email
-
-	// 3. Найти пользователя по google_id или email
+	// 2. Найти или создать пользователя
 	user, err := s.userRepo.FindByGoogleID(ctx, googleID)
 	if err != nil {
-		// если not found — создаём
+		log.Println("auth: repo error:", err)
+
 		if errors.Is(err, out_ports.ErrNotFound) {
 			user = &domain.User{
-				Email:    &email,
+				Email:    email,
 				GoogleID: &googleID,
-				// CreatedAt/UpdatedAt заполнятся в репозитории
 			}
 			if err := s.userRepo.Create(ctx, user); err != nil {
 				return "", err
@@ -91,15 +91,17 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code string) 
 		} else {
 			return "", err
 		}
-	} else {
-		// опционально обновить email, если изменился
 	}
 
-	// 4. Сгенерировать свой JWT по user.ID
+	// 3. Сгенерировать свой JWT
 	token, err := s.tokenProvider.GenerateAccessToken(ctx, string(user.ID), user.Email)
 	if err != nil {
+		log.Println("auth: token error:", err)
+
 		return "", err
 	}
+
+	_ = tokens // пока чтобы не ругался компилятор, если не используешь
 
 	return token, nil
 }
