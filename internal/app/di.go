@@ -6,10 +6,13 @@ import (
 	"log"
 
 	"steam-observer/internal/modules/auth/adapters/in/google"
-	authpg "steam-observer/internal/modules/auth/adapters/out/postgres"
-	authapp "steam-observer/internal/modules/auth/app"
+	"steam-observer/internal/modules/auth/adapters/out/jwt_provider"
 	"steam-observer/internal/shared/config"
 	"steam-observer/internal/shared/db"
+
+	authpg "steam-observer/internal/modules/auth/adapters/out/postgres"
+
+	authapp "steam-observer/internal/modules/auth/app"
 )
 
 type Container struct {
@@ -27,8 +30,8 @@ func NewContainer(cfg *config.Config) *Container {
 	}
 
 	userRepo := authpg.NewUserRepository(pg.Pool)
-	oauthClient := google.NewStubClient()       // твой адаптер
-	tokenProvider := token.NewProvider(cfg.JWT) // твой адаптер
+	oauthClient := google.NewStubClient()
+	tokenProvider := jwt_provider.NewJWTProvider(cfg.JWT)
 
 	authService := authapp.NewAuthService(cfg.Google, userRepo, oauthClient, tokenProvider)
 
