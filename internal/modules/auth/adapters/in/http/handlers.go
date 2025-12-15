@@ -43,9 +43,7 @@ func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Вариант 1: отдать JSON
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"access_token":"` + token + `"}`))
-
-	// Вариант 2 (позже): положить в httpOnly cookie и сделать redirect на фронт
 }
