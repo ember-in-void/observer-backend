@@ -1,0 +1,12 @@
+2025-12-17 02:56:31.600 [INFO ] [main.go:10] starting application...
+2025-12-17 02:56:31.600 [INFO ] [main.go:11] config loaded, http_addr=:8080
+2025-12-17 02:56:31.600 [WARN ] [main.go:12] this is a warning message
+2025-12-17 02:56:31.600 [WARN ] [main.go:13] deprecated config option: old_setting
+2025-12-17 02:56:31.600 [ERROR] [main.go:14] something went wrong!
+2025-12-17 02:56:31.600 [ERROR] [main.go:15] failed to connect: connection refused
+2025-12-17 02:56:31.600 [INFO ] [main.go:18] user logged in | user_id=123
+2025-12-17 02:56:31.600 [INFO ] [main.go:23] request completed | method=GET path=/api/health status=200
+2025-12-17 02:58:09.387 [INFO ] [main.go:17] starting steam-observer API...
+2025-12-17 02:58:09.390 [INFO ] [main.go:20] config loaded, http_addr=:8080
+2025-12-17 02:58:09.390 [INFO ] [di.go:30] connecting to postgres...
+2025-12-17 02:58:09.403 [ERROR] [di.go:33] failed to connect to postgres: failed to connect to `user=adam_user database=adam_platform`: 127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connect: connection refused

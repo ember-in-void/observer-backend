@@ -1,0 +1,1 @@
+2025/12/17 02:51:27 [ERROR] [di.go:33] failed to connect to postgres: failed to connect to `user=adam_user database=adam_platform`: 127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connect: connection refused

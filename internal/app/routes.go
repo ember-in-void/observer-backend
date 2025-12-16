@@ -13,15 +13,17 @@ func RegisterRoutes(mux *http.ServeMux, c *Container) {
 	mux.HandleFunc("/health", handleHealth)
 
 	// Auth routes
-	authHandler := authhttp.NewAuthHandler(c.AuthService)
+	authHandler := authhttp.NewAuthHandler(c.AuthService, c.Logger.WithField("handler", "auth"))
 	mux.HandleFunc("/auth/google/login", authHandler.GoogleLogin)
 	mux.HandleFunc("/auth/google/callback", authHandler.GoogleCallback)
 
-	authMW := middleware.Auth(c.TokenProvider)
+	authMW := middleware.Auth(c.TokenProvider, c.Logger.WithField("middleware", "auth"))
 
 	// Protected routes
 	marketHandler := markethttp.NewMarketHandler(c.MarketService)
 	mux.Handle("/market/tracked", authMW(http.HandlerFunc(marketHandler.ListTracked)))
+
+	c.Logger.Info("routes registered successfully")
 }
 
 func handleHealth(w http.ResponseWriter, r *http.Request) {

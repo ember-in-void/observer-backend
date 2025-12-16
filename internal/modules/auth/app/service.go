@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"time"
 
 	"steam-observer/internal/modules/auth/ports/in_ports"
 	"steam-observer/internal/modules/auth/ports/out_ports"
 	"steam-observer/internal/shared/config"
+	"steam-observer/internal/shared/logger"
 )
 
 type AuthService interface {
@@ -23,6 +23,7 @@ type authServiceImpl struct {
 	oauthClient   out_ports.GoogleOAuthClient
 	tokenProvider out_ports.TokenProvider
 	stateStore    StateStore
+	logger        logger.Logger
 }
 
 func NewAuthService(
@@ -31,6 +32,7 @@ func NewAuthService(
 	oauthClient out_ports.GoogleOAuthClient,
 	tokenProvider out_ports.TokenProvider,
 	stateStore StateStore,
+	log logger.Logger,
 ) AuthService {
 	return &authServiceImpl{
 		cfg:           googleCfg,
@@ -38,6 +40,7 @@ func NewAuthService(
 		oauthClient:   oauthClient,
 		tokenProvider: tokenProvider,
 		stateStore:    stateStore,
+		logger:        log,
 	}
 }
 
@@ -122,7 +125,7 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 	// Если state не найден или истёк - это потенциальная CSRF атака
 	_, err := s.stateStore.Get(ctx, state)
 	if err != nil {
-		log.Printf("auth: invalid state: %v", err)
+		s.logger.Warnf("invalid state: %v", err)
 		return "", fmt.Errorf("invalid state: %w", err)
 	}
 
@@ -134,7 +137,7 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 	// Параметры: code, client_id, client_secret, redirect_uri, grant_type
 	tokens, err := s.oauthClient.ExchangeCode(ctx, code)
 	if err != nil {
-		log.Printf("auth: failed to exchange code: %v", err)
+		s.logger.Errorf("failed to exchange code: %v", err)
 		return "", fmt.Errorf("exchange authorization code: %w", err)
 	}
 
@@ -147,7 +150,7 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 	// Возвращает: sub (Google ID), email, name, picture и т.д.
 	googleUserInfo, err := s.oauthClient.GetUserInfo(ctx, tokens.AccessToken)
 	if err != nil {
-		log.Printf("auth: failed to get user info: %v", err)
+		s.logger.Errorf("failed to get user info: %v", err)
 		return "", fmt.Errorf("get google user info: %w", err)
 	}
 
@@ -162,36 +165,36 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 		// Работает благодаря %w в fmt.Errorf
 		if errors.Is(err, out_ports.ErrNotFound) {
 			// Пользователь не найден - создаём нового
-			log.Printf("auth: creating new user with google_id=%s", googleUserInfo.Sub)
+			s.logger.Infof("creating new user with google_id=%s", googleUserInfo.Sub)
 
 			// ToUser() конвертирует Google данные в domain.User
 			user = googleUserInfo.ToUser()
 
 			// Create сохраняет в БД и обновляет user.ID, user.CreatedAt
 			if err := s.userRepo.Create(ctx, user); err != nil {
-				log.Printf("auth: failed to create user: %v", err)
+				s.logger.Errorf("failed to create user: %v", err)
 				return "", fmt.Errorf("create user: %w", err)
 			}
 
-			log.Printf("auth: user created successfully, id=%s", user.ID)
+			s.logger.Infof("user created successfully, id=%s", user.ID)
 		} else {
 			// Другая ошибка (БД недоступна, timeout и т.д.)
-			log.Printf("auth: repository error: %v", err)
+			s.logger.Errorf("repository error: %v", err)
 			return "", fmt.Errorf("find user by google_id: %w", err)
 		}
 	} else {
 		// Пользователь найден - обновляем email если изменился
-		log.Printf("auth: found existing user, id=%s", user.ID)
+		s.logger.Infof("found existing user, id=%s", user.ID)
 
 		if googleUserInfo.Email != "" && (user.Email == nil || *user.Email != googleUserInfo.Email) {
-			log.Printf("auth: updating user email: %s -> %s",
+			s.logger.Infof("updating user email: %s -> %s",
 				safeDeref(user.Email), googleUserInfo.Email)
 
 			user.UpdateEmail(googleUserInfo.Email)
 
 			if err := s.userRepo.Update(ctx, user); err != nil {
 				// Не критично - можем продолжить login
-				log.Printf("auth: failed to update user email: %v", err)
+				s.logger.Warnf("failed to update user email: %v", err)
 			}
 		}
 	}
@@ -208,11 +211,11 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 	// - iss: "steam-observer"
 	token, err := s.tokenProvider.GenerateAccessToken(ctx, string(user.ID), user.Email)
 	if err != nil {
-		log.Printf("auth: failed to generate token: %v", err)
+		s.logger.Errorf("failed to generate token: %v", err)
 		return "", fmt.Errorf("generate access token: %w", err)
 	}
 
-	log.Printf("auth: login successful, user_id=%s", user.ID)
+	s.logger.Infof("login successful, user_id=%s", user.ID)
 
 	return token, nil
 }

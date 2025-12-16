@@ -86,8 +86,9 @@ func (c *client) ExchangeCode(ctx context.Context, code string) (*out_ports.OAut
 
 // GetUserInfo - получает информацию о пользователе от Google
 func (c *client) GetUserInfo(ctx context.Context, accessToken string) (*domain.GoogleUserInfo, error) {
-	// Запрос к Google UserInfo API
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://www.googleapis.com/oauth2/v2/userinfo", nil)
+	// Запрос к Google UserInfo API (OpenID Connect endpoint)
+	// v3 endpoint возвращает 'sub', v2 возвращает 'id'
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://openidconnect.googleapis.com/v1/userinfo", nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
