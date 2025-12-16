@@ -7,15 +7,15 @@ import (
 	"steam-observer/internal/modules/auth/ports/in_ports"
 )
 
-type Handler struct {
+type AuthHandler struct {
 	authService in_ports.AuthService
 }
 
-func NewHandler(authService in_ports.AuthService) *Handler {
-	return &Handler{authService: authService}
+func NewAuthHandler(authService in_ports.AuthService) *AuthHandler {
+	return &AuthHandler{authService: authService}
 }
 
-func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 	redirectAfter := r.URL.Query().Get("redirect")
 
 	url, err := h.authService.BeginGoogleLogin(r.Context(), redirectAfter)
@@ -28,7 +28,7 @@ func (h *Handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	if code == "" {
 		w.WriteHeader(http.StatusBadRequest)
@@ -36,7 +36,14 @@ func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.authService.CompleteGoogleLogin(r.Context(), code)
+	state := r.URL.Query().Get("state")
+	if state == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"missing state"}`))
+		return
+	}
+
+	token, err := h.authService.CompleteGoogleLogin(r.Context(), code, state)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte(`{"error":"cannot complete google login"}`))

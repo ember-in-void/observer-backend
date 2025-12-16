@@ -8,15 +8,15 @@ import (
 	mw "steam-observer/internal/shared/http/middleware"
 )
 
-type Handler struct {
+type MarketHandler struct {
 	service in_ports.MarketService
 }
 
-func NewHandler(service in_ports.MarketService) *Handler {
-	return &Handler{service: service}
+func NewMarketHandler(service in_ports.MarketService) *MarketHandler {
+	return &MarketHandler{service: service}
 }
 
-func (h *Handler) ListTracked(w http.ResponseWriter, r *http.Request) {
+func (h *MarketHandler) ListTracked(w http.ResponseWriter, r *http.Request) {
 	userID, ok := mw.UserIDFromContext(r.Context())
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
