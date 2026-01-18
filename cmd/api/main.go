@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-	// Инициализируем логгер первым делом
 	log, err := logger.NewCustomLogger()
 	if err != nil {
 		panic("failed to initialize logger: " + err.Error())
