@@ -26,6 +26,11 @@ func RegisterRoutes(mux *http.ServeMux, c *Container) {
 	c.Logger.Info("routes registered successfully")
 }
 
+func NewRoutesHandler(mux *http.ServeMux, corsOrigins []string) http.Handler {
+	// Применяем CORS middleware ко всему
+	return middleware.CORS(corsOrigins)(mux)
+}
+
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
