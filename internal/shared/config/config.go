@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -21,14 +22,26 @@ type JWTConfig struct {
 }
 
 type Config struct {
-	HTTPAddr string
-	Google   GoogleOAuthConfig
-	Database string
-	JWT      JWTConfig
+	HTTPAddr    string
+	Google      GoogleOAuthConfig
+	Database    string
+	JWT         JWTConfig
+	CORSOrigins []string
 }
 
 func Load() *Config {
 	_ = godotenv.Load()
+
+	// Парсим CORS_ORIGINS (разделяются запятыми)
+	corsOriginsStr := os.Getenv("CORS_ORIGINS")
+	corsOrigins := []string{}
+	if corsOriginsStr != "" {
+		corsOrigins = strings.Split(corsOriginsStr, ",")
+		// Убираем пробелы
+		for i, origin := range corsOrigins {
+			corsOrigins[i] = strings.TrimSpace(origin)
+		}
+	}
 
 	return &Config{
 		HTTPAddr: getEnv("HTTP_ADDR", ":8080"),
@@ -42,6 +55,7 @@ func Load() *Config {
 			Secret: os.Getenv("JWT_SECRET"),
 			TTL:    time.Duration(getEnvAsInt("JWT_TTL_SECONDS", 3600)) * time.Second,
 		},
+		CORSOrigins: corsOrigins,
 	}
 }
 
