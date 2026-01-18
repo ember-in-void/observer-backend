@@ -22,8 +22,10 @@ func NewServer(cfg *config.Config, log logger.Logger) *Server {
 
 	RegisterRoutes(mux, container)
 
-	// Оборачиваем в logging middleware
-	handler := middleware.Logging(log.WithField("component", "http"))(mux)
+	// Применяем middleware (CORS → Logging)
+	handler := middleware.Logging(log.WithField("component", "http"))(
+		NewRoutesHandler(mux, cfg.CORSOrigins),
+	)
 
 	return &Server{
 		addr:      cfg.HTTPAddr,
