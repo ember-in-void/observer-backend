@@ -8,6 +8,9 @@ import (
 	authpg "steam-observer/internal/modules/auth/adapters/out/postgres"
 	authapp "steam-observer/internal/modules/auth/app"
 	"steam-observer/internal/modules/auth/ports/out_ports"
+	dashboardhttp "steam-observer/internal/modules/dashboard/adapters/in/http"
+	dashboardapp "steam-observer/internal/modules/dashboard/app"
+	"steam-observer/internal/modules/dashboard/ports/in_ports"
 	marketapp "steam-observer/internal/modules/market/app"
 	"steam-observer/internal/shared/config"
 	"steam-observer/internal/shared/db"
@@ -15,12 +18,14 @@ import (
 )
 
 type Container struct {
-	Config        *config.Config
-	DB            *db.Postgres
-	Logger        logger.Logger
-	AuthService   authapp.AuthService
-	TokenProvider out_ports.TokenProvider
-	MarketService marketapp.MarketService
+	Config           *config.Config
+	DB               *db.Postgres
+	Logger           logger.Logger
+	AuthService      authapp.AuthService
+	TokenProvider    out_ports.TokenProvider
+	MarketService    marketapp.MarketService
+	DashboardService in_ports.DashboardService
+	DashboardHandler *dashboardhttp.DashboardHandler
 }
 
 func NewContainer(cfg *config.Config, log logger.Logger) *Container {
@@ -54,15 +59,19 @@ func NewContainer(cfg *config.Config, log logger.Logger) *Container {
 	)
 
 	marketService := marketapp.NewMarketService()
+	dashboardService := dashboardapp.NewDashboardService()
+	dashboardHandler := dashboardhttp.NewDashboardHandler(dashboardService)
 
 	log.Info("DI container initialized successfully")
 
 	return &Container{
-		Config:        cfg,
-		DB:            pg,
-		Logger:        log,
-		AuthService:   authService,
-		TokenProvider: tokenProvider,
-		MarketService: marketService,
+		Config:           cfg,
+		DB:               pg,
+		Logger:           log,
+		AuthService:      authService,
+		TokenProvider:    tokenProvider,
+		MarketService:    marketService,
+		DashboardService: dashboardService,
+		DashboardHandler: dashboardHandler,
 	}
 }

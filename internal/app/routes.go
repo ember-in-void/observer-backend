@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	authhttp "steam-observer/internal/modules/auth/adapters/in/http"
+	dashboardhttp "steam-observer/internal/modules/dashboard/adapters/in/http"
 	markethttp "steam-observer/internal/modules/market/adapters/in/http"
 	"steam-observer/internal/shared/http/middleware"
 )
@@ -18,6 +19,10 @@ func RegisterRoutes(mux *http.ServeMux, c *Container) {
 	mux.HandleFunc("/auth/google/callback", authHandler.GoogleCallback)
 
 	authMW := middleware.Auth(c.TokenProvider, c.Logger.WithField("middleware", "auth"))
+
+	// Dashboard routes
+	dashboardHandler := dashboardhttp.NewDashboardHandler(c.DashboardService)
+	mux.Handle("/dashboard", authMW(http.HandlerFunc(dashboardHandler.GetDashboard)))
 
 	// Protected routes
 	marketHandler := markethttp.NewMarketHandler(c.MarketService)

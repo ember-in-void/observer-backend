@@ -55,7 +55,7 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("processing google callback")
 
-	token, err := h.authService.CompleteGoogleLogin(r.Context(), code, state)
+	token, redirectAfter, err := h.authService.CompleteGoogleLogin(r.Context(), code, state)
 	if err != nil {
 		h.logger.Errorf("cannot complete google login: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -65,7 +65,17 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Info("google login completed successfully")
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(`{"access_token":"` + token + `"}`))
+	// ==========================================
+	// Формируем URL для редиректа на фронтенд
+	// ==========================================
+	// По умолчанию редиректим на корень фронтенда
+	frontendURL := "http://localhost:3000"
+	if redirectAfter != "" {
+		// Если был передан конкретный путь (напр. /dashboard), можно добавить его
+		// Но пока для простоты — всегда на корень с токеном
+		// frontendURL = frontendURL + redirectAfter
+	}
+
+	targetURL := frontendURL + "/?token=" + token
+	http.Redirect(w, r, targetURL, http.StatusFound)
 }

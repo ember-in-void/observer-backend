@@ -116,17 +116,18 @@ func (s *authServiceImpl) BeginGoogleLogin(ctx context.Context, redirectAfterLog
 }
 
 // CompleteGoogleLogin - завершает OAuth flow, создаёт/обновляет пользователя
-func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state string) (string, error) {
+// Возвращает (token, redirectURL, error)
+func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state string) (string, string, error) {
 	// ========================================
 	// 0. Валидируем state (CSRF protection)
 	// ========================================
 
 	// Get проверяет state и удаляет его (one-time use)
 	// Если state не найден или истёк - это потенциальная CSRF атака
-	_, err := s.stateStore.Get(ctx, state)
+	redirectURL, err := s.stateStore.Get(ctx, state)
 	if err != nil {
 		s.logger.Warnf("invalid state: %v", err)
-		return "", fmt.Errorf("invalid state: %w", err)
+		return "", "", fmt.Errorf("invalid state: %w", err)
 	}
 
 	// ========================================
@@ -138,7 +139,7 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 	tokens, err := s.oauthClient.ExchangeCode(ctx, code)
 	if err != nil {
 		s.logger.Errorf("failed to exchange code: %v", err)
-		return "", fmt.Errorf("exchange authorization code: %w", err)
+		return "", "", fmt.Errorf("exchange authorization code: %w", err)
 	}
 
 	// ========================================
@@ -151,7 +152,7 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 	googleUserInfo, err := s.oauthClient.GetUserInfo(ctx, tokens.AccessToken)
 	if err != nil {
 		s.logger.Errorf("failed to get user info: %v", err)
-		return "", fmt.Errorf("get google user info: %w", err)
+		return "", "", fmt.Errorf("get google user info: %w", err)
 	}
 
 	// ========================================
@@ -173,14 +174,14 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 			// Create сохраняет в БД и обновляет user.ID, user.CreatedAt
 			if err := s.userRepo.Create(ctx, user); err != nil {
 				s.logger.Errorf("failed to create user: %v", err)
-				return "", fmt.Errorf("create user: %w", err)
+				return "", "", fmt.Errorf("create user: %w", err)
 			}
 
 			s.logger.Infof("user created successfully, id=%s", user.ID)
 		} else {
 			// Другая ошибка (БД недоступна, timeout и т.д.)
 			s.logger.Errorf("repository error: %v", err)
-			return "", fmt.Errorf("find user by google_id: %w", err)
+			return "", "", fmt.Errorf("find user by google_id: %w", err)
 		}
 	} else {
 		// Пользователь найден - обновляем email если изменился
@@ -212,12 +213,12 @@ func (s *authServiceImpl) CompleteGoogleLogin(ctx context.Context, code, state s
 	token, err := s.tokenProvider.GenerateAccessToken(ctx, string(user.ID), user.Email)
 	if err != nil {
 		s.logger.Errorf("failed to generate token: %v", err)
-		return "", fmt.Errorf("generate access token: %w", err)
+		return "", "", fmt.Errorf("generate access token: %w", err)
 	}
 
 	s.logger.Infof("login successful, user_id=%s", user.ID)
 
-	return token, nil
+	return token, redirectURL, nil
 }
 
 // safeDeref - безопасное разыменование указателя для логирования
