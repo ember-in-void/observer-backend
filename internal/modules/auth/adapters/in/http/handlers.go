@@ -11,12 +11,14 @@ import (
 type AuthHandler struct {
 	authService in_ports.AuthService
 	logger      logger.Logger
+	frontendURL string
 }
 
-func NewAuthHandler(authService in_ports.AuthService, log logger.Logger) *AuthHandler {
+func NewAuthHandler(authService in_ports.AuthService, log logger.Logger, frontendURL string) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
 		logger:      log,
+		frontendURL: frontendURL,
 	}
 }
 
@@ -69,7 +71,7 @@ func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	// Формируем URL для редиректа на фронтенд
 	// ==========================================
 	// По умолчанию редиректим на корень фронтенда
-	frontendURL := "http://localhost:3000"
+	frontendURL := h.frontendURL
 	if redirectAfter != "" {
 		// Если был передан конкретный путь (напр. /dashboard), можно добавить его
 		// Но пока для простоты — всегда на корень с токеном

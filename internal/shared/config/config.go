@@ -23,6 +23,7 @@ type JWTConfig struct {
 
 type Config struct {
 	HTTPAddr    string
+	FrontendURL string
 	Google      GoogleOAuthConfig
 	Database    string
 	JWT         JWTConfig
@@ -44,7 +45,8 @@ func Load() *Config {
 	}
 
 	return &Config{
-		HTTPAddr: getEnv("HTTP_ADDR", ":8080"),
+		HTTPAddr:    getEnv("HTTP_ADDR", ":8080"),
+		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
 		Google: GoogleOAuthConfig{
 			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),

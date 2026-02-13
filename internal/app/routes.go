@@ -14,7 +14,7 @@ func RegisterRoutes(mux *http.ServeMux, c *Container) {
 	mux.HandleFunc("/health", handleHealth)
 
 	// Auth routes
-	authHandler := authhttp.NewAuthHandler(c.AuthService, c.Logger.WithField("handler", "auth"))
+	authHandler := authhttp.NewAuthHandler(c.AuthService, c.Logger.WithField("handler", "auth"), c.Config.FrontendURL)
 	mux.HandleFunc("/auth/google/login", authHandler.GoogleLogin)
 	mux.HandleFunc("/auth/google/callback", authHandler.GoogleCallback)
 
