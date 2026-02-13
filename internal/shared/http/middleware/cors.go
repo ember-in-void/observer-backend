@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -19,6 +20,10 @@ func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
 					break
 				}
 			}
+
+			// === ОТЛАДКА CORS (Появится в логах Railway) ===
+			fmt.Printf("[CORS DEBUG] Запрос от: '%s', Разрешено: %v, Мой список: %v\n", origin, allowed, allowedOrigins)
+			// ===============================================
 
 			if allowed {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
